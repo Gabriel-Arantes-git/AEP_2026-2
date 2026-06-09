@@ -23,11 +23,5 @@ public class CategoriaService extends DefaultCrudService<CategoriaRepository, Ca
         return categoriaRepository.findAllByAtivoTrue();
     }
 
-    @Override
-    public void deletar(Long id) {
-        categoriaRepository.findById(id).ifPresent(c -> {
-            c.setAtivo(false);
-            categoriaRepository.save(c);
-        });
-    }
+
 }

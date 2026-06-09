@@ -9,7 +9,7 @@ import { AuthResponse } from '../../core/models/auth.model';
   template: `
     <div class="dashboard">
       <header>
-        <span>Sistema AEP</span>
+        <span>ReportaInga</span>
         <button (click)="logout()">Sair</button>
       </header>
       <main>

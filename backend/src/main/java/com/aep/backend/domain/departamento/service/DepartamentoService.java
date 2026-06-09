@@ -23,11 +23,5 @@ public class DepartamentoService extends DefaultCrudService<DepartamentoReposito
         return departamentoRepository.findAllByAtivoTrue();
     }
 
-    @Override
-    public void deletar(Long id) {
-        departamentoRepository.findById(id).ifPresent(d -> {
-            d.setAtivo(false);
-            departamentoRepository.save(d);
-        });
-    }
+
 }

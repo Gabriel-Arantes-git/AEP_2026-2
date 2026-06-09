@@ -24,6 +24,13 @@ public abstract class DefaultCrudService<R extends DefaultCrudRepository<E>, E e
     }
 
     public void deletar(Long id) {
-        getRepository().deleteById(id);
+        getRepository().findById(id).ifPresent(e -> {
+            if (e instanceof Ativavel a) {
+                a.setAtivo(false);
+                getRepository().save(e);
+            } else {
+                getRepository().deleteById(id);
+            }
+        });
     }
 }

@@ -1,0 +1,26 @@
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Node
+frontend/node_modules/
+frontend/.angular/
+frontend/dist/
+
+# Java / Maven
+backend/target/
+*.class
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db

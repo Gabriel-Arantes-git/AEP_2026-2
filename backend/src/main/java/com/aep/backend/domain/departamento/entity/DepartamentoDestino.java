@@ -1,5 +1,6 @@
 package com.aep.backend.domain.departamento.entity;
 
+import com.aep.backend.domain.abstraction.Ativavel;
 import com.aep.backend.domain.abstraction.DefaultEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -9,7 +10,7 @@ import lombok.*;
 @Getter
 @Setter
 @NoArgsConstructor
-public class DepartamentoDestino extends DefaultEntity {
+public class DepartamentoDestino extends DefaultEntity implements Ativavel {
 
     @Column(unique = true, nullable = false)
     private String nome;

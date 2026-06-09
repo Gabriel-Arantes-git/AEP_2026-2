@@ -2,7 +2,7 @@ import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
-import { AuthResponse, LoginRequest } from '../models/auth.model';
+import { AuthResponse, CadastroRequest, LoginRequest } from '../models/auth.model';
 import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -11,6 +11,10 @@ export class AuthService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly TOKEN_KEY = 'aep_token';
   private readonly USER_KEY = 'aep_user';
+
+  cadastrar(request: CadastroRequest): Observable<void> {
+    return this.http.post<void>(`${environment.apiUrl}/usuarios/cadastrar`, request);
+  }
 
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, request).pipe(
@@ -43,5 +47,10 @@ export class AuthService {
     if (!isPlatformBrowser(this.platformId)) return null;
     const user = localStorage.getItem(this.USER_KEY);
     return user ? JSON.parse(user) : null;
+  }
+
+  isAdmin(): boolean {
+    const user = this.getCurrentUser();
+    return user?.perfil === 'GESTOR' || user?.perfil === 'ATENDENTE';
   }
 }
