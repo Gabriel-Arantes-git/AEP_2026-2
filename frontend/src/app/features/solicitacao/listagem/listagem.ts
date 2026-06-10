@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, OnInit, computed, inject, signal, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { SolicitacaoLocalService, SolicitacaoLocal } from '../../../core/services/solicitacao-local.service';
@@ -11,7 +12,9 @@ import { GeocodingService } from '../../../core/services/geocoding.service';
 import { adicionarTileLayer, marcadorSvg } from '../../../core/utils/leaflet.utils';
 import { BottomNavComponent } from '../../../shared/components/bottom-nav/bottom-nav';
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE_MOBILE = 4;
+const BP_MD = 768;
+const BP_XL = 1280;
 
 @Component({
   selector: 'app-listagem',
@@ -26,6 +29,7 @@ export class ListagemComponent implements OnInit {
   private readonly categoriaService = inject(CategoriaService);
   private readonly departamentoService = inject(DepartamentoService);
   private readonly geocoding = inject(GeocodingService);
+  private readonly platformId = inject(PLATFORM_ID);
 
   readonly STATUS_OPCOES = STATUS_OPCOES;
   readonly PRIORIDADES = PRIORIDADES;
@@ -43,6 +47,14 @@ export class ListagemComponent implements OnInit {
   readonly modalEditar = signal<SolicitacaoLocal | null>(null);
   readonly mostrarMapaEdicao = signal(false);
   readonly carregandoEnderecoEdicao = signal(false);
+  readonly larguraJanela = signal(0);
+
+  readonly pageSize = computed(() => {
+    const w = this.larguraJanela();
+    if (w >= BP_XL) return PAGE_SIZE_MOBILE * 3;
+    if (w >= BP_MD) return PAGE_SIZE_MOBILE * 2;
+    return PAGE_SIZE_MOBILE;
+  });
 
   private editMap: import('leaflet').Map | null = null;
   private editMarcador: import('leaflet').Marker | null = null;
@@ -88,11 +100,12 @@ export class ListagemComponent implements OnInit {
     });
   });
 
-  readonly totalPaginas = computed(() => Math.max(1, Math.ceil(this.filtradas().length / PAGE_SIZE)));
+  readonly totalPaginas = computed(() => Math.max(1, Math.ceil(this.filtradas().length / this.pageSize())));
   readonly paginas = computed(() => Array.from({ length: this.totalPaginas() }, (_, i) => i + 1));
   readonly paginaItens = computed(() => {
-    const inicio = (this.paginaCorrente() - 1) * PAGE_SIZE;
-    return this.filtradas().slice(inicio, inicio + PAGE_SIZE);
+    const tamanho = this.pageSize();
+    const inicio = (this.paginaCorrente() - 1) * tamanho;
+    return this.filtradas().slice(inicio, inicio + tamanho);
   });
 
   ngOnInit(): void {
@@ -100,6 +113,18 @@ export class ListagemComponent implements OnInit {
     this.solicitacoes.set(this.service.listar());
     this.categoriaService.listarAtivas().subscribe({ next: cats => this.categorias.set(cats) });
     this.departamentoService.listarAtivos().subscribe({ next: deps => this.departamentos.set(deps) });
+    if (isPlatformBrowser(this.platformId)) {
+      this.larguraJanela.set(window.innerWidth);
+    }
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    this.larguraJanela.set(window.innerWidth);
+    if (this.paginaCorrente() > this.totalPaginas()) {
+      this.paginaCorrente.set(this.totalPaginas());
+    }
   }
 
   onBusca(event: Event): void {
