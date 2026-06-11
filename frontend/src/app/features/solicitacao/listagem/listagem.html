@@ -255,43 +255,55 @@
           <p class="modal__protocolo">{{ modalEditar()!.protocolo }}</p>
         </div>
 
+        <div class="modal__secao">
+          <p class="modal__rotulo-sm">Categoria</p>
+          <p class="modal__valor">{{ modalEditar()!.categoria }}</p>
+        </div>
+
+        <div class="modal__secao">
+          <p class="modal__rotulo-sm">Descrição</p>
+          <p class="modal__valor">{{ modalEditar()!.descricao }}</p>
+        </div>
+
+        @if (modalEditar()!.pontoReferencia) {
+          <div class="modal__secao">
+            <p class="modal__rotulo-sm">Ponto de Referência</p>
+            <p class="modal__valor">{{ modalEditar()!.pontoReferencia }}</p>
+          </div>
+        }
+
+        <div class="modal__secao">
+          <p class="modal__rotulo-sm">Localização</p>
+          <p class="modal__valor">
+            {{ modalEditar()!.logradouro || '—' }}
+            @if (modalEditar()!.bairro) { · {{ modalEditar()!.bairro }} }
+            @if (modalEditar()!.cep) { · CEP {{ modalEditar()!.cep }} }
+          </p>
+        </div>
+
         <div class="edit-form">
 
-          <div class="edit-form__grupo">
-            <label class="edit-form__label">Status</label>
-            <div class="select-wrapper">
-              <select class="edit-form__select" [value]="editForm.status" (change)="onSelectChange('status', $event)">
-                @for (op of STATUS_OPCOES; track op.valor) {
-                  <option [value]="op.valor" [selected]="editForm.status === op.valor">{{ op.label }}</option>
-                }
-              </select>
-              <svg class="select-seta" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 10l5 5 5-5z"/>
-              </svg>
-            </div>
-          </div>
-
-          <div class="edit-form__grupo">
-            <label class="edit-form__label">Categoria</label>
-            <div class="select-wrapper">
-              <select class="edit-form__select" [value]="editForm.categoria" (change)="onSelectChange('categoria', $event)">
-                @for (cat of categorias(); track cat.id) {
-                  <option [value]="cat.nome" [selected]="editForm.categoria === cat.nome">{{ cat.nome }}</option>
-                }
-              </select>
-              <svg class="select-seta" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 10l5 5 5-5z"/>
-              </svg>
-            </div>
-          </div>
-
           <div class="edit-form__linha">
+            <div class="edit-form__grupo">
+              <label class="edit-form__label">Status</label>
+              <div class="select-wrapper">
+                <select class="edit-form__select" [value]="editForm.status" (change)="onStatusChange($event)">
+                  @for (op of statusEdicaoOpcoes(); track op.valor) {
+                    <option [value]="op.valor" [selected]="editForm.status === op.valor">{{ op.label }}</option>
+                  }
+                </select>
+                <svg class="select-seta" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7 10l5 5 5-5z"/>
+                </svg>
+              </div>
+            </div>
+
             <div class="edit-form__grupo">
               <label class="edit-form__label">Prioridade</label>
               <div class="select-wrapper">
                 <select class="edit-form__select" [value]="editForm.prioridade ?? ''" (change)="onPrioridadeChange($event)">
                   <option value="">Selecione...</option>
-                  @for (p of PRIORIDADES; track p.valor) {
+                  @for (p of prioridadesEdicaoOpcoes(); track p.valor) {
                     <option [value]="p.valor" [selected]="editForm.prioridade === p.valor">{{ p.label }}</option>
                   }
                 </select>
@@ -300,110 +312,43 @@
                 </svg>
               </div>
             </div>
-
-            <div class="edit-form__grupo">
-              <label class="edit-form__label">Departamento</label>
-              <div class="select-wrapper">
-                <select class="edit-form__select" [value]="editForm.departamento" (change)="onSelectChange('departamento', $event)">
-                  <option value="">Selecione...</option>
-                  @for (dep of departamentos(); track dep.id) {
-                    <option [value]="dep.nome" [selected]="editForm.departamento === dep.nome">{{ dep.nome }}</option>
-                  }
-                </select>
-                <svg class="select-seta" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M7 10l5 5 5-5z"/>
-                </svg>
-              </div>
-            </div>
           </div>
 
           <div class="edit-form__grupo">
-            <div class="edit-form__loc-cabecalho">
-              <label class="edit-form__label">Localização</label>
-              <button type="button" class="btn-toggle-mapa" (click)="toggleMapaEdicao()">
-                @if (mostrarMapaEdicao()) {
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                  </svg>
-                  Editar texto
-                } @else {
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                  </svg>
-                  Selecionar no mapa
+            <label class="edit-form__label">Departamento</label>
+            <div class="select-wrapper">
+              <select class="edit-form__select" [value]="editForm.departamentoId ?? ''" (change)="onDepartamentoChange($event)">
+                <option value="">Selecione...</option>
+                @for (dep of departamentos(); track dep.id) {
+                  <option [value]="dep.id" [selected]="editForm.departamentoId === dep.id">{{ dep.nome }}</option>
                 }
-              </button>
+              </select>
+              <svg class="select-seta" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 10l5 5 5-5z"/>
+              </svg>
             </div>
-
-            @if (mostrarMapaEdicao()) {
-              <div id="edit-map-container" class="edit-mapa"></div>
-              @if (carregandoEnderecoEdicao()) {
-                <p class="edit-loc-carregando">Buscando endereço...</p>
-              }
-            }
-
-            <div class="edit-form__linha">
-              <div class="edit-form__grupo">
-                <label class="edit-form__label">Logradouro</label>
-                <input class="edit-form__input" type="text"
-                  [value]="editForm.logradouro"
-                  (input)="onTextInput('logradouro', $event)" />
-              </div>
-              <div class="edit-form__grupo">
-                <label class="edit-form__label">Bairro</label>
-                <input class="edit-form__input" type="text"
-                  [value]="editForm.bairro"
-                  (input)="onTextInput('bairro', $event)" />
-              </div>
-            </div>
-
-            <div class="edit-form__grupo">
-              <label class="edit-form__label">CEP</label>
-              <input class="edit-form__input" type="text"
-                [value]="editForm.cep"
-                (input)="onTextInput('cep', $event)" />
-            </div>
-
-            @if (editForm.lat && editForm.lng) {
-              <p class="edit-form__coords">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="11" height="11">
-                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                </svg>
-                {{ editForm.lat.toFixed(5) }}, {{ editForm.lng.toFixed(5) }}
-              </p>
-            }
           </div>
 
+          @if (modalEditar()!.prazoAlvo) {
+            <div class="edit-form__grupo">
+              <label class="edit-form__label">Prazo</label>
+              <p class="modal__valor">{{ formatarData(modalEditar()!.prazoAlvo) }}</p>
+            </div>
+          }
+
           <div class="edit-form__grupo">
-            <label class="edit-form__label">Descrição</label>
-            <textarea class="edit-form__textarea" rows="4"
-              [value]="editForm.descricao"
-              (input)="onTextInput('descricao', $event)">
+            <label class="edit-form__label">Comentário</label>
+            <textarea class="edit-form__textarea" rows="3"
+              [value]="editForm.comentario"
+              (input)="onComentarioInput($event)">
             </textarea>
           </div>
 
-          <div class="edit-form__grupo">
-            <label class="edit-form__label">Ponto de Referência</label>
-            <input class="edit-form__input" type="text"
-              [value]="editForm.pontoReferencia"
-              (input)="onTextInput('pontoReferencia', $event)" />
-          </div>
+          @if (erroEdicao()) {
+            <p class="error-message">{{ erroEdicao() }}</p>
+          }
 
-          <div class="edit-form__validacao">
-            @if (editForm.prioridade && editForm.departamento) {
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-              </svg>
-              <span>Denúncia será validada ao salvar</span>
-            } @else {
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-              </svg>
-              <span>Preencha Prioridade e Departamento para validar</span>
-            }
-          </div>
-
-          <button class="btn-salvar" (click)="salvarEdicao()">
+          <button class="btn-salvar" [disabled]="!editForm.comentario.trim()" (click)="salvarEdicao()">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
               <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
             </svg>

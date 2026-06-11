@@ -48,6 +48,9 @@ public class SolicitacaoService {
         s.setBairro(req.bairro());
         s.setLogradouro(req.logradouro());
         s.setReferencia(req.referencia());
+        s.setLatitude(req.latitude());
+        s.setLongitude(req.longitude());
+        s.setCep(req.cep());
         s.setAnonimo(req.anonimo());
         s.setNomeContato(req.nomeContato());
         s.setEmailContato(req.emailContato());
@@ -107,6 +110,10 @@ public class SolicitacaoService {
 
     public List<Solicitacao> listarPorStatus(StatusSolicitacao status) {
         return solicitacaoRepository.findAllByStatusOrderByDataCadastroAsc(status);
+    }
+
+    public List<Solicitacao> listarMinhas(Long usuarioId) {
+        return solicitacaoRepository.findAllByUsuarioIdOrderByDataCadastroDesc(usuarioId);
     }
 
     public List<Movimentacao> buscarHistorico(Long solicitacaoId) {

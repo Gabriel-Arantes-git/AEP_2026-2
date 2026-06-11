@@ -34,7 +34,8 @@ public class SolicitacaoController {
         SolicitacaoRequest reqAnonima = new SolicitacaoRequest(
                 req.categoriaId(), req.descricao(), req.bairro(),
                 req.logradouro(), req.referencia(), true,
-                req.nomeContato(), req.emailContato()
+                req.nomeContato(), req.emailContato(),
+                req.latitude(), req.longitude(), req.cep()
         );
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(SolicitacaoResponse.from(solicitacaoService.criar(reqAnonima, null)));
@@ -48,6 +49,18 @@ public class SolicitacaoController {
                 ? solicitacaoService.listarPorStatus(status).stream().map(SolicitacaoResponse::from).toList()
                 : solicitacaoService.listarTodas().stream().map(SolicitacaoResponse::from).toList();
         return ResponseEntity.ok(lista);
+    }
+
+    @GetMapping("/minhas")
+    public ResponseEntity<List<SolicitacaoResponse>> minhas(@AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.ok(
+                solicitacaoService.listarMinhas(usuario.getId()).stream().map(SolicitacaoResponse::from).toList());
+    }
+
+    @GetMapping("/publicas")
+    public ResponseEntity<List<SolicitacaoResponse>> publicas() {
+        return ResponseEntity.ok(
+                solicitacaoService.listarTodas().stream().map(SolicitacaoResponse::from).toList());
     }
 
     @GetMapping("/protocolo/{protocolo}")

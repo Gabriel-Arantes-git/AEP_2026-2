@@ -185,6 +185,17 @@ $bp-desktop: 1024px;
   }
 }
 
+.error-message {
+  color: #dc2626;
+  font-size: 0.875rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
 .confirmar-wrapper {
   position: fixed;
   bottom: calc(#{$nav-h} + 1rem);

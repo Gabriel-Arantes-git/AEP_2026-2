@@ -2,14 +2,12 @@ import { Component, HostListener, OnInit, computed, inject, signal, PLATFORM_ID 
 import { isPlatformBrowser } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
-import { SolicitacaoLocalService, SolicitacaoLocal } from '../../../core/services/solicitacao-local.service';
+import { SolicitacaoService } from '../../../core/services/solicitacao.service';
+import { SolicitacaoView, paraSolicitacaoView } from '../../../core/models/solicitacao.model';
 import { FILTRO_USUARIO, PRIORIDADES, STATUS_FLUXO, STATUS_OPCOES } from '../../../core/constants/solicitacao.constants';
-import { CategoriaService } from '../../../core/services/categoria.service';
-import { Categoria } from '../../../core/models/categoria.model';
 import { DepartamentoService } from '../../../core/services/departamento.service';
 import { DepartamentoDestino } from '../../../core/models/departamento.model';
-import { GeocodingService } from '../../../core/services/geocoding.service';
-import { adicionarTileLayer, marcadorSvg } from '../../../core/utils/leaflet.utils';
+import { EnumService } from '../../../core/services/enum.service';
 import { BottomNavComponent } from '../../../shared/components/bottom-nav/bottom-nav';
 
 const PAGE_SIZE_MOBILE = 4;
@@ -24,29 +22,27 @@ const BP_XL = 1280;
   styleUrl: './listagem.scss',
 })
 export class ListagemComponent implements OnInit {
-  private readonly service = inject(SolicitacaoLocalService);
+  private readonly solicitacaoService = inject(SolicitacaoService);
   private readonly auth = inject(AuthService);
-  private readonly categoriaService = inject(CategoriaService);
   private readonly departamentoService = inject(DepartamentoService);
-  private readonly geocoding = inject(GeocodingService);
+  private readonly enumService = inject(EnumService);
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly STATUS_OPCOES = STATUS_OPCOES;
-  readonly PRIORIDADES = PRIORIDADES;
-  readonly categorias = signal<Categoria[]>([]);
   readonly departamentos = signal<DepartamentoDestino[]>([]);
+  readonly statusEdicaoOpcoes = signal<{ valor: string; label: string }[]>([]);
+  readonly prioridadesEdicaoOpcoes = signal<{ valor: string; label: string }[]>([]);
 
   readonly isAdmin = signal(false);
   readonly filtroOpcoes = computed(() => this.isAdmin() ? STATUS_OPCOES : FILTRO_USUARIO);
-  readonly solicitacoes = signal<SolicitacaoLocal[]>([]);
+  readonly solicitacoes = signal<SolicitacaoView[]>([]);
   readonly termoBusca = signal('');
   readonly filtroStatus = signal<string | null>(null);
   readonly filtrosAberto = signal(false);
   readonly paginaCorrente = signal(1);
-  readonly modalAberta = signal<SolicitacaoLocal | null>(null);
-  readonly modalEditar = signal<SolicitacaoLocal | null>(null);
-  readonly mostrarMapaEdicao = signal(false);
-  readonly carregandoEnderecoEdicao = signal(false);
+  readonly modalAberta = signal<SolicitacaoView | null>(null);
+  readonly modalEditar = signal<SolicitacaoView | null>(null);
+  readonly erroEdicao = signal<string | null>(null);
   readonly larguraJanela = signal(0);
 
   readonly pageSize = computed(() => {
@@ -56,33 +52,16 @@ export class ListagemComponent implements OnInit {
     return PAGE_SIZE_MOBILE;
   });
 
-  private editMap: import('leaflet').Map | null = null;
-  private editMarcador: import('leaflet').Marker | null = null;
-
   editForm: {
-    categoria: string;
-    descricao: string;
-    pontoReferencia: string;
-    status: SolicitacaoLocal['status'];
-    prioridade: SolicitacaoLocal['prioridade'];
-    departamento: string;
-    lat: number;
-    lng: number;
-    cep: string;
-    bairro: string;
-    logradouro: string;
+    status: SolicitacaoView['status'];
+    prioridade: SolicitacaoView['prioridade'];
+    departamentoId: number | null;
+    comentario: string;
   } = {
-    categoria: '',
-    descricao: '',
-    pontoReferencia: '',
     status: 'ABERTO',
     prioridade: null,
-    departamento: '',
-    lat: 0,
-    lng: 0,
-    cep: '',
-    bairro: '',
-    logradouro: '',
+    departamentoId: null,
+    comentario: '',
   };
 
   readonly filtradas = computed(() => {
@@ -110,12 +89,24 @@ export class ListagemComponent implements OnInit {
 
   ngOnInit(): void {
     this.isAdmin.set(this.auth.isAdmin());
-    this.solicitacoes.set(this.service.listar());
-    this.categoriaService.listarAtivas().subscribe({ next: cats => this.categorias.set(cats) });
+    this.carregarSolicitacoes();
     this.departamentoService.listarAtivos().subscribe({ next: deps => this.departamentos.set(deps) });
+    this.enumService.listarStatusSolicitacao().subscribe({
+      next: valores => this.statusEdicaoOpcoes.set(valores.map(v => ({ valor: v, label: this.statusLabel(v) }))),
+    });
+    this.enumService.listarPrioridades().subscribe({
+      next: valores => this.prioridadesEdicaoOpcoes.set(valores.map(v => ({ valor: v, label: this.prioridadeLabel(v) }))),
+    });
     if (isPlatformBrowser(this.platformId)) {
       this.larguraJanela.set(window.innerWidth);
     }
+  }
+
+  private carregarSolicitacoes(): void {
+    const obs = this.isAdmin()
+      ? this.solicitacaoService.listar()
+      : this.solicitacaoService.listarPublicas();
+    obs.subscribe({ next: lista => this.solicitacoes.set(lista.map(paraSolicitacaoView)) });
   }
 
   @HostListener('window:resize')
@@ -143,124 +134,43 @@ export class ListagemComponent implements OnInit {
   paginaAnterior(): void { if (this.paginaCorrente() > 1) this.paginaCorrente.update(p => p - 1); }
   proximaPagina(): void { if (this.paginaCorrente() < this.totalPaginas()) this.paginaCorrente.update(p => p + 1); }
 
-  abrirModal(sol: SolicitacaoLocal): void { this.modalAberta.set(sol); }
+  abrirModal(sol: SolicitacaoView): void { this.modalAberta.set(sol); }
   fecharModal(): void { this.modalAberta.set(null); }
 
-  abrirEditar(sol: SolicitacaoLocal): void {
+  abrirEditar(sol: SolicitacaoView): void {
     this.editForm = {
-      categoria: sol.categoria,
-      descricao: sol.descricao,
-      pontoReferencia: sol.pontoReferencia,
       status: sol.status,
       prioridade: sol.prioridade,
-      departamento: sol.departamento ?? '',
-      lat: sol.lat,
-      lng: sol.lng,
-      cep: sol.cep,
-      bairro: sol.bairro,
-      logradouro: sol.logradouro,
+      departamentoId: sol.departamentoId,
+      comentario: '',
     };
-    this.destroyEditMap();
-    this.mostrarMapaEdicao.set(false);
+    this.erroEdicao.set(null);
     this.modalEditar.set(sol);
   }
 
   fecharEditar(): void {
-    this.destroyEditMap();
-    this.mostrarMapaEdicao.set(false);
     this.modalEditar.set(null);
   }
 
   salvarEdicao(): void {
     const sol = this.modalEditar();
     if (!sol) return;
-    this.service.atualizar(sol.id, {
-      categoria: this.editForm.categoria,
-      descricao: this.editForm.descricao,
-      pontoReferencia: this.editForm.pontoReferencia,
-      status: this.editForm.status,
+    this.erroEdicao.set(null);
+    this.solicitacaoService.moverStatus(sol.id, {
+      novoStatus: this.editForm.status,
+      comentario: this.editForm.comentario,
       prioridade: this.editForm.prioridade,
-      departamento: this.editForm.departamento || null,
-      lat: this.editForm.lat,
-      lng: this.editForm.lng,
-      cep: this.editForm.cep,
-      bairro: this.editForm.bairro,
-      logradouro: this.editForm.logradouro,
-      dataAtualizacao: new Date().toISOString(),
-    });
-    this.solicitacoes.set(this.service.listar());
-    this.fecharEditar();
-  }
-
-  async toggleMapaEdicao(): Promise<void> {
-    if (this.mostrarMapaEdicao()) {
-      this.destroyEditMap();
-      this.mostrarMapaEdicao.set(false);
-      return;
-    }
-    this.mostrarMapaEdicao.set(true);
-    await new Promise<void>(r => setTimeout(r, 80));
-    this.initEditMap();
-  }
-
-  private async initEditMap(): Promise<void> {
-    const container = document.getElementById('edit-map-container');
-    if (!container || this.editMap) return;
-
-    const L = await import('leaflet');
-    const icone = L.divIcon({
-      className: '',
-      html: marcadorSvg(),
-      iconSize: [32, 42],
-      iconAnchor: [16, 42],
-    });
-
-    const lat = this.editForm.lat || -23.4205;
-    const lng = this.editForm.lng || -51.9331;
-
-    this.editMap = L.map(container).setView([lat, lng], 15);
-    adicionarTileLayer(L, this.editMap);
-
-    if (this.editForm.lat && this.editForm.lng) {
-      this.editMarcador = L.marker([lat, lng], { icon: icone }).addTo(this.editMap);
-    }
-
-    this.editMap.on('click', (e: import('leaflet').LeafletMouseEvent) => {
-      this.aoClicarMapaEdicao(L, icone, e.latlng.lat, e.latlng.lng);
-    });
-  }
-
-  private destroyEditMap(): void {
-    if (this.editMap) {
-      this.editMap.remove();
-      this.editMap = null;
-      this.editMarcador = null;
-    }
-  }
-
-  private aoClicarMapaEdicao(
-    L: typeof import('leaflet'),
-    icone: import('leaflet').DivIcon,
-    lat: number,
-    lng: number,
-  ): void {
-    this.editForm.lat = lat;
-    this.editForm.lng = lng;
-    if (this.editMarcador) this.editMap!.removeLayer(this.editMarcador);
-    this.editMarcador = L.marker([lat, lng], { icon: icone }).addTo(this.editMap!);
-    this.carregandoEnderecoEdicao.set(true);
-    this.geocoding.reverter(lat, lng).subscribe({
-      next: (res) => {
-        this.editForm.logradouro = res.logradouro;
-        this.editForm.bairro = res.bairro;
-        this.editForm.cep = res.cep;
-        this.carregandoEnderecoEdicao.set(false);
+      departamentoId: this.editForm.departamentoId,
+    }).subscribe({
+      next: () => {
+        this.carregarSolicitacoes();
+        this.fecharEditar();
       },
-      error: () => this.carregandoEnderecoEdicao.set(false),
+      error: err => this.erroEdicao.set(err.error?.mensagem ?? 'Erro ao salvar alterações.'),
     });
   }
 
-  ehValidada(sol: SolicitacaoLocal): boolean {
+  ehValidada(sol: SolicitacaoView): boolean {
     return sol.prioridade !== null && sol.departamento !== null;
   }
 
@@ -283,16 +193,21 @@ export class ListagemComponent implements OnInit {
     return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
   }
 
-  onSelectChange(field: 'status' | 'categoria' | 'departamento', event: Event): void {
-    this.editForm[field] = (event.target as HTMLSelectElement).value as never;
+  onStatusChange(event: Event): void {
+    this.editForm.status = (event.target as HTMLSelectElement).value as SolicitacaoView['status'];
   }
 
   onPrioridadeChange(event: Event): void {
     const val = (event.target as HTMLSelectElement).value;
-    this.editForm.prioridade = (val || null) as SolicitacaoLocal['prioridade'];
+    this.editForm.prioridade = (val || null) as SolicitacaoView['prioridade'];
   }
 
-  onTextInput(field: string, event: Event): void {
-    (this.editForm as Record<string, unknown>)[field] = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
+  onDepartamentoChange(event: Event): void {
+    const val = (event.target as HTMLSelectElement).value;
+    this.editForm.departamentoId = val ? Number(val) : null;
+  }
+
+  onComentarioInput(event: Event): void {
+    this.editForm.comentario = (event.target as HTMLTextAreaElement).value;
   }
 }

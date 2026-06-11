@@ -44,6 +44,12 @@
           placeholder="Digite aqui..."
           rows="5"
         ></textarea>
+        <p class="form-hint" [class.form-hint--erro]="form.controls.descricao.invalid && form.controls.descricao.touched">
+          {{ form.value.descricao?.length ?? 0 }}/{{ minDescricao }} caracteres mínimos
+          @if (anonimo) {
+            (denúncia anônima exige mais detalhes)
+          }
+        </p>
       </div>
 
       <div class="form-group">

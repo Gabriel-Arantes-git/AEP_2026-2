@@ -13,5 +13,6 @@ public interface SolicitacaoRepository extends DefaultCrudRepository<Solicitacao
     Optional<Solicitacao> findByProtocolo(String protocolo);
     List<Solicitacao> findAllByStatusOrderByDataCadastroAsc(StatusSolicitacao status);
     List<Solicitacao> findAllByOrderByDataCadastroDesc();
+    List<Solicitacao> findAllByUsuarioIdOrderByDataCadastroDesc(Long usuarioId);
     long countByProtocoloStartingWith(String prefixo);
 }

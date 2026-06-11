@@ -6,10 +6,13 @@ import jakarta.validation.constraints.NotNull;
 public record SolicitacaoRequest(
         @NotNull Long categoriaId,
         @NotBlank String descricao,
-        @NotBlank String bairro,
+        String bairro,
         String logradouro,
         String referencia,
         boolean anonimo,
         String nomeContato,
-        String emailContato
+        String emailContato,
+        Double latitude,
+        Double longitude,
+        String cep
 ) {}

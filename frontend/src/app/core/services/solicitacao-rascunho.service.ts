@@ -2,12 +2,14 @@ import { Injectable, signal } from '@angular/core';
 
 export interface RascunhoSolicitacao {
   categoria: string;
+  categoriaId: number;
   descricao: string;
   pontoReferencia: string;
 }
 
 const RASCUNHO_INICIAL: RascunhoSolicitacao = {
   categoria: '',
+  categoriaId: 0,
   descricao: '',
   pontoReferencia: '',
 };

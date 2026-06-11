@@ -28,12 +28,17 @@ public class Solicitacao extends DefaultEntity {
     @Column(nullable = false, length = 2000)
     private String descricao;
 
-    @Column(nullable = false)
     private String bairro;
 
     private String logradouro;
 
     private String referencia;
+
+    private Double latitude;
+
+    private Double longitude;
+
+    private String cep;
 
     @Column(nullable = false)
     private boolean anonimo = false;

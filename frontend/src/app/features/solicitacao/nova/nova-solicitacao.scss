@@ -66,6 +66,8 @@ $bp-desktop: 1024px;
   @media (min-width: $bp-desktop) {
     padding: 2rem 2rem 3rem;
     max-width: 720px;
+    width: 100%;
+    margin: 0 auto;
   }
 }
 
@@ -162,6 +164,15 @@ $bp-desktop: 1024px;
   }
 
   &::placeholder { color: #cbd5e1; }
+}
+
+.form-hint {
+  font-size: 0.75rem;
+  color: $text-muted;
+  font-weight: 500;
+  margin: 0;
+
+  &--erro { color: #dc2626; }
 }
 
 .form-textarea {

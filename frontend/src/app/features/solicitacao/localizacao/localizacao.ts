@@ -1,7 +1,8 @@
 import { Component, ElementRef, ViewChild, afterNextRender, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { SolicitacaoRascunhoService } from '../../../core/services/solicitacao-rascunho.service';
-import { SolicitacaoLocalService } from '../../../core/services/solicitacao-local.service';
+import { SolicitacaoService } from '../../../core/services/solicitacao.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { GeocodingService } from '../../../core/services/geocoding.service';
 import { adicionarTileLayer, marcadorSvg } from '../../../core/utils/leaflet.utils';
 import { BottomNavComponent } from '../../../shared/components/bottom-nav/bottom-nav';
@@ -16,16 +17,19 @@ import { BottomNavComponent } from '../../../shared/components/bottom-nav/bottom
 export class LocalizacaoComponent {
   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef<HTMLDivElement>;
 
-  private readonly router           = inject(Router);
-  private readonly rascunho         = inject(SolicitacaoRascunhoService);
-  private readonly solicitacaoLocal = inject(SolicitacaoLocalService);
-  private readonly geocoding        = inject(GeocodingService);
+  private readonly router             = inject(Router);
+  private readonly rascunho           = inject(SolicitacaoRascunhoService);
+  private readonly solicitacaoService = inject(SolicitacaoService);
+  private readonly auth               = inject(AuthService);
+  private readonly geocoding          = inject(GeocodingService);
 
   readonly pontoSelecionado   = signal(false);
   readonly carregandoEndereco = signal(false);
   readonly logradouro         = signal('');
   readonly bairro             = signal('');
   readonly cep                = signal('');
+  readonly enviando           = signal(false);
+  readonly erro               = signal('');
 
   private map:      import('leaflet').Map    | null = null;
   private marcador: import('leaflet').Marker | null = null;
@@ -87,18 +91,32 @@ export class LocalizacaoComponent {
 
   confirmar(): void {
     const r = this.rascunho.rascunho();
-    this.solicitacaoLocal.salvar({
-      categoria:       r.categoria,
-      descricao:       r.descricao,
-      pontoReferencia: r.pontoReferencia,
-      lat:             this.lat,
-      lng:             this.lng,
-      cep:             this.cep(),
-      bairro:          this.bairro(),
-      logradouro:      this.logradouro(),
+    const anonimo = !this.auth.isAuthenticated();
+    const req = {
+      categoriaId: r.categoriaId,
+      descricao:   r.descricao,
+      bairro:      this.bairro(),
+      logradouro:  this.logradouro(),
+      referencia:  r.pontoReferencia,
+      anonimo,
+      latitude:    this.lat,
+      longitude:   this.lng,
+      cep:         this.cep(),
+    };
+
+    this.enviando.set(true);
+    this.erro.set('');
+    const obs = anonimo ? this.solicitacaoService.criarAnonima(req) : this.solicitacaoService.criar(req);
+    obs.subscribe({
+      next: () => {
+        this.rascunho.limpar();
+        this.router.navigate(['/acompanhamento']);
+      },
+      error: err => {
+        this.enviando.set(false);
+        this.erro.set(err.error?.mensagem ?? 'Erro ao enviar denúncia. Tente novamente.');
+      },
     });
-    this.rascunho.limpar();
-    this.router.navigate(['/acompanhamento']);
   }
 
   voltar(): void {

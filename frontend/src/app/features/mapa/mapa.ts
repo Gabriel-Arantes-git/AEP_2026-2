@@ -1,6 +1,8 @@
 import { Component, afterNextRender, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { SolicitacaoLocalService, SolicitacaoLocal } from '../../core/services/solicitacao-local.service';
+import { catchError, firstValueFrom, of } from 'rxjs';
+import { SolicitacaoService } from '../../core/services/solicitacao.service';
+import { SolicitacaoView, paraSolicitacaoView } from '../../core/models/solicitacao.model';
 import { AuthService } from '../../core/services/auth.service';
 import { COR_PRIORIDADE, FILTRO_SEM_DADOS, FILTROS_MAPA, PRIORIDADE_LABEL } from '../../core/constants/solicitacao.constants';
 import { adicionarTileLayer, pinSvg } from '../../core/utils/leaflet.utils';
@@ -14,12 +16,12 @@ import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-na
   styleUrl: './mapa.scss',
 })
 export class MapaComponent {
-  private readonly service = inject(SolicitacaoLocalService);
+  private readonly service = inject(SolicitacaoService);
   private readonly auth = inject(AuthService);
 
   readonly FILTROS         = FILTROS_MAPA;
   readonly FILTRO_SEM_DADOS = FILTRO_SEM_DADOS;
-  readonly selecionada  = signal<SolicitacaoLocal | null>(null);
+  readonly selecionada  = signal<SolicitacaoView | null>(null);
   readonly filtroAtivo  = signal<string | null>(null);
   readonly isAdmin      = signal(false);
   readonly filtroAberto = signal(false);
@@ -34,8 +36,14 @@ export class MapaComponent {
 
   private async iniciarMapa(): Promise<void> {
     const L = await import('leaflet');
-    const lista = this.service.listar().filter(s =>
-      s.lat && s.lng && (this.isAdmin() || this.ehValidada(s))
+
+    const obs = this.isAdmin()
+      ? this.service.listar()
+      : this.service.listarPublicas();
+
+    const solicitacoes = await firstValueFrom(obs.pipe(catchError(() => of([]))));
+    const lista = solicitacoes.map(paraSolicitacaoView).filter(s =>
+      s.lat && s.lng && s.status !== 'ENCERRADO' && (this.isAdmin() || this.ehValidada(s))
     );
 
     this.mapaLeaflet = L.map('mapa-container', { zoomControl: true }).setView([-23.4205, -51.9331], 13);
@@ -76,7 +84,7 @@ export class MapaComponent {
 
   fechar(): void { this.selecionada.set(null); }
 
-  tempoInfo(sol: SolicitacaoLocal): string {
+  tempoInfo(sol: SolicitacaoView): string {
     const inicio = new Date(sol.dataAbertura).getTime();
     const fim = sol.dataAtualizacao ? new Date(sol.dataAtualizacao).getTime() : Date.now();
     const dias = Math.floor((fim - inicio) / 86400000);
@@ -98,7 +106,7 @@ export class MapaComponent {
     return p ? (COR_PRIORIDADE[p] ?? '#9ca3af') : '#9ca3af';
   }
 
-  ehValidada(sol: SolicitacaoLocal): boolean {
+  ehValidada(sol: SolicitacaoView): boolean {
     return sol.prioridade !== null && sol.departamento !== null;
   }
 }

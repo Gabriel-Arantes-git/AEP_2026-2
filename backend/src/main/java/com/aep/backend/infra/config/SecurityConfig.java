@@ -40,7 +40,9 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**", "/h2-console/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/categorias/ativas").permitAll()
                         .requestMatchers(HttpMethod.GET, "/departamentos/ativos").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/enums/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/solicitacoes/anonima").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/solicitacoes/publicas").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios/cadastrar").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
@@ -61,7 +63,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:4200"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("Authorization"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
