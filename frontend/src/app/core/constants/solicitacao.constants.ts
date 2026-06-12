@@ -37,6 +37,11 @@ export const PRIORIDADE_LABEL: Record<string, string> = {
   BAIXA:   'Leve',
 };
 
+export function formatarPrazo(horas: number): string {
+  if (horas % 24 === 0 && horas > 24) return `${horas / 24} dias`;
+  return `${horas}h`;
+}
+
 export const FILTROS_MAPA = [
   { label: 'Gravíssimas', prioridade: 'CRITICA', cor: COR_PRIORIDADE['CRITICA'] },
   { label: 'Graves',      prioridade: 'ALTA',    cor: COR_PRIORIDADE['ALTA'] },

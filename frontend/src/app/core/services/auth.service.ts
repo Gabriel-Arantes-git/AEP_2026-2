@@ -53,4 +53,8 @@ export class AuthService {
     const user = this.getCurrentUser();
     return user?.perfil === 'GESTOR' || user?.perfil === 'ATENDENTE';
   }
+
+  isGestor(): boolean {
+    return this.getCurrentUser()?.perfil === 'GESTOR';
+  }
 }

@@ -28,6 +28,10 @@ export class SolicitacaoService {
     return this.http.get<Solicitacao[]>(`${environment.apiUrl}/solicitacoes/publicas`);
   }
 
+  listarAnonimas(): Observable<Solicitacao[]> {
+    return this.http.get<Solicitacao[]>(`${environment.apiUrl}/solicitacoes/anonimas`);
+  }
+
   moverStatus(id: number, req: MoverStatusRequest): Observable<void> {
     return this.http.patch<void>(`${environment.apiUrl}/solicitacoes/${id}/status`, req);
   }

@@ -7,7 +7,6 @@ import { Categoria } from '../../../core/models/categoria.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { BottomNavComponent } from '../../../shared/components/bottom-nav/bottom-nav';
 
-const MIN_DESCRICAO_IDENTIFICADA = 20;
 const MIN_DESCRICAO_ANONIMA = 50;
 
 @Component({
@@ -25,11 +24,13 @@ export class NovaSolicitacaoComponent implements OnInit {
 
   readonly categorias = signal<Categoria[]>([]);
   readonly anonimo = !this.auth.isAuthenticated();
-  readonly minDescricao = this.anonimo ? MIN_DESCRICAO_ANONIMA : MIN_DESCRICAO_IDENTIFICADA;
+  readonly minDescricao = this.anonimo ? MIN_DESCRICAO_ANONIMA : 0;
 
   form = new FormGroup({
     categoria:       new FormControl('', Validators.required),
-    descricao:       new FormControl('', [Validators.required, Validators.minLength(this.minDescricao)]),
+    descricao:       new FormControl('', this.anonimo
+      ? [Validators.required, Validators.minLength(MIN_DESCRICAO_ANONIMA)]
+      : [Validators.required]),
     pontoReferencia: new FormControl('', Validators.required),
   });
 

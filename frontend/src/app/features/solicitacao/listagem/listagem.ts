@@ -4,10 +4,12 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { SolicitacaoService } from '../../../core/services/solicitacao.service';
 import { SolicitacaoView, paraSolicitacaoView } from '../../../core/models/solicitacao.model';
-import { FILTRO_USUARIO, PRIORIDADES, STATUS_FLUXO, STATUS_OPCOES } from '../../../core/constants/solicitacao.constants';
+import { FILTRO_USUARIO, formatarPrazo, PRIORIDADES, STATUS_FLUXO, STATUS_OPCOES } from '../../../core/constants/solicitacao.constants';
 import { DepartamentoService } from '../../../core/services/departamento.service';
 import { DepartamentoDestino } from '../../../core/models/departamento.model';
 import { EnumService } from '../../../core/services/enum.service';
+import { SlaService } from '../../../core/services/sla.service';
+import { SlaConfig } from '../../../core/models/sla.model';
 import { BottomNavComponent } from '../../../shared/components/bottom-nav/bottom-nav';
 
 const PAGE_SIZE_MOBILE = 4;
@@ -26,14 +28,17 @@ export class ListagemComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly departamentoService = inject(DepartamentoService);
   private readonly enumService = inject(EnumService);
+  private readonly slaService = inject(SlaService);
   private readonly platformId = inject(PLATFORM_ID);
 
   readonly STATUS_OPCOES = STATUS_OPCOES;
   readonly departamentos = signal<DepartamentoDestino[]>([]);
+  readonly slaConfigs = signal<SlaConfig[]>([]);
   readonly statusEdicaoOpcoes = signal<{ valor: string; label: string }[]>([]);
   readonly prioridadesEdicaoOpcoes = signal<{ valor: string; label: string }[]>([]);
 
   readonly isAdmin = signal(false);
+  readonly isGestor = signal(false);
   readonly filtroOpcoes = computed(() => this.isAdmin() ? STATUS_OPCOES : FILTRO_USUARIO);
   readonly solicitacoes = signal<SolicitacaoView[]>([]);
   readonly termoBusca = signal('');
@@ -89,6 +94,7 @@ export class ListagemComponent implements OnInit {
 
   ngOnInit(): void {
     this.isAdmin.set(this.auth.isAdmin());
+    this.isGestor.set(this.auth.isGestor());
     this.carregarSolicitacoes();
     this.departamentoService.listarAtivos().subscribe({ next: deps => this.departamentos.set(deps) });
     this.enumService.listarStatusSolicitacao().subscribe({
@@ -97,6 +103,7 @@ export class ListagemComponent implements OnInit {
     this.enumService.listarPrioridades().subscribe({
       next: valores => this.prioridadesEdicaoOpcoes.set(valores.map(v => ({ valor: v, label: this.prioridadeLabel(v) }))),
     });
+    this.slaService.listar().subscribe({ next: configs => this.slaConfigs.set(configs) });
     if (isPlatformBrowser(this.platformId)) {
       this.larguraJanela.set(window.innerWidth);
     }
@@ -105,7 +112,9 @@ export class ListagemComponent implements OnInit {
   private carregarSolicitacoes(): void {
     const obs = this.isAdmin()
       ? this.solicitacaoService.listar()
-      : this.solicitacaoService.listarPublicas();
+      : this.auth.isAuthenticated()
+        ? this.solicitacaoService.listarMinhas()
+        : this.solicitacaoService.listarAnonimas();
     obs.subscribe({ next: lista => this.solicitacoes.set(lista.map(paraSolicitacaoView)) });
   }
 
@@ -153,11 +162,19 @@ export class ListagemComponent implements OnInit {
   }
 
   salvarEdicao(): void {
+    this.executarMudancaStatus(this.editForm.status, 'Erro ao salvar alterações.');
+  }
+
+  encerrarDenuncia(): void {
+    this.executarMudancaStatus('ENCERRADO', 'Erro ao encerrar denúncia.');
+  }
+
+  private executarMudancaStatus(novoStatus: string, erroPadrao: string): void {
     const sol = this.modalEditar();
     if (!sol) return;
     this.erroEdicao.set(null);
     this.solicitacaoService.moverStatus(sol.id, {
-      novoStatus: this.editForm.status,
+      novoStatus,
       comentario: this.editForm.comentario,
       prioridade: this.editForm.prioridade,
       departamentoId: this.editForm.departamentoId,
@@ -166,7 +183,7 @@ export class ListagemComponent implements OnInit {
         this.carregarSolicitacoes();
         this.fecharEditar();
       },
-      error: err => this.erroEdicao.set(err.error?.mensagem ?? 'Erro ao salvar alterações.'),
+      error: err => this.erroEdicao.set(err.error?.mensagem ?? erroPadrao),
     });
   }
 
@@ -180,6 +197,11 @@ export class ListagemComponent implements OnInit {
 
   prioridadeLabel(p: string | null): string {
     return PRIORIDADES.find(x => x.valor === p)?.label ?? '—';
+  }
+
+  prazoLabel(p: string | null): string {
+    const config = this.slaConfigs().find(c => c.prioridade === p);
+    return config ? formatarPrazo(config.prazoHoras) : '—';
   }
 
   statusIndice(status: string): number {

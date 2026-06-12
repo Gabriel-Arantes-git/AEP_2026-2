@@ -111,6 +111,13 @@
           }
         </div>
 
+        @if (selecionada()!.prioridade && (isAdmin() || ehValidada(selecionada()!))) {
+          <div class="modal__secao">
+            <p class="modal__rotulo">Prazo</p>
+            <p class="modal__valor">{{ prazoLabel(selecionada()!.prioridade) }}</p>
+          </div>
+        }
+
         <div class="modal__secao">
           <p class="modal__rotulo">Localização</p>
           <p class="modal__valor">

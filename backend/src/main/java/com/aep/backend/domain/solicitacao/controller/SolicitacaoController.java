@@ -63,6 +63,12 @@ public class SolicitacaoController {
                 solicitacaoService.listarTodas().stream().map(SolicitacaoResponse::from).toList());
     }
 
+    @GetMapping("/anonimas")
+    public ResponseEntity<List<SolicitacaoResponse>> anonimas() {
+        return ResponseEntity.ok(
+                solicitacaoService.listarAnonimas().stream().map(SolicitacaoResponse::from).toList());
+    }
+
     @GetMapping("/protocolo/{protocolo}")
     public ResponseEntity<SolicitacaoResponse> buscarPorProtocolo(@PathVariable String protocolo) {
         return ResponseEntity.ok(SolicitacaoResponse.from(solicitacaoService.buscarPorProtocolo(protocolo)));

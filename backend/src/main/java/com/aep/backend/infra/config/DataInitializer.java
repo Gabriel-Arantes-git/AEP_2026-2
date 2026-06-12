@@ -32,7 +32,7 @@ public class DataInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         criarUsuario("Administrador", "admin@gov", "00000000000", "admin", PerfilUsuario.GESTOR);
-        criarUsuario("Atendente", "atendente.gov", "00000000001", "atendente123", PerfilUsuario.ATENDENTE);
+        criarUsuario("Atendente", "atendente@gov", "00000000001", "123", PerfilUsuario.ATENDENTE);
         criarUsuario("Usuário Teste", "teste123@gmail.com", "00000000002", "teste", PerfilUsuario.CIDADAO);
         criarCategorias();
         criarDepartamentos();

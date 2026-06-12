@@ -2,6 +2,7 @@ package com.aep.backend.domain.solicitacao.service;
 
 import com.aep.backend.domain.categoria.repository.CategoriaRepository;
 import com.aep.backend.domain.departamento.repository.DepartamentoRepository;
+import com.aep.backend.domain.enums.PerfilUsuario;
 import com.aep.backend.domain.enums.Prioridade;
 import com.aep.backend.domain.enums.StatusSolicitacao;
 import com.aep.backend.domain.log.entity.LogAcao;
@@ -74,6 +75,9 @@ public class SolicitacaoService {
             throw new IllegalStateException(
                     "Transição inválida: " + s.getStatus() + " → " + req.novoStatus());
 
+        if (req.novoStatus() == StatusSolicitacao.ENCERRADO && responsavel.getPerfil() != PerfilUsuario.GESTOR)
+            throw new IllegalStateException("Apenas o gestor pode encerrar a solicitação");
+
         StatusSolicitacao anterior = s.getStatus();
 
         if (req.novoStatus() == StatusSolicitacao.TRIAGEM) {
@@ -116,6 +120,10 @@ public class SolicitacaoService {
         return solicitacaoRepository.findAllByUsuarioIdOrderByDataCadastroDesc(usuarioId);
     }
 
+    public List<Solicitacao> listarAnonimas() {
+        return solicitacaoRepository.findAllByUsuarioIsNullOrderByDataCadastroDesc();
+    }
+
     public List<Movimentacao> buscarHistorico(Long solicitacaoId) {
         return movimentacaoRepository.findAllBySolicitacaoIdOrderByDataCadastroAsc(solicitacaoId);
     }
@@ -125,13 +133,10 @@ public class SolicitacaoService {
     }
 
     private void validarDescricao(String descricao, boolean anonimo) {
-        int min = anonimo ? 50 : 20;
         if (descricao == null || descricao.isBlank())
             throw new IllegalArgumentException("Descrição obrigatória");
-        if (descricao.length() < min)
-            throw new IllegalArgumentException(
-                    "Descrição deve ter no mínimo " + min + " caracteres para denúncia "
-                    + (anonimo ? "anônima" : "identificada"));
+        if (anonimo && descricao.length() < 50)
+            throw new IllegalArgumentException("Descrição deve ter no mínimo 50 caracteres para denúncia anônima");
     }
 
     private String gerarProtocolo() {

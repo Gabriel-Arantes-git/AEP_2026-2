@@ -1,0 +1,94 @@
+<div class="log-page">
+
+  <header class="top-bar">
+    <a routerLink="/home" class="top-bar__logo" aria-label="Página inicial">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+      </svg>
+    </a>
+    <span class="top-bar__title">Logs do Sistema</span>
+    <div class="top-bar__spacer"></div>
+  </header>
+
+  <main class="page-content">
+
+    <div class="busca-area">
+      <div class="busca-campo">
+        <svg class="busca-icone" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+        </svg>
+        <input class="busca-input" type="text" placeholder="Buscar por ação, entidade ou usuário..."
+          [value]="termoBusca()" (input)="onBusca($event)" />
+      </div>
+    </div>
+
+    <div class="lista">
+      @if (paginaItens().length === 0) {
+        <div class="lista-vazia">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="40" height="40">
+            <path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
+          </svg>
+          <p>Nenhum registro encontrado.</p>
+        </div>
+      }
+
+      @for (log of paginaItens(); track log.id) {
+        <div class="card">
+          <div class="card__topo">
+            <div class="card__imagem">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+                <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+              </svg>
+            </div>
+            <div class="card__info">
+              <p class="card__titulo">{{ log.acao }}</p>
+              <p class="card__protocolo">{{ log.usuarioNome ?? 'Usuário Anônimo' }}</p>
+            </div>
+          </div>
+          <div class="card__rodape">
+            @if (log.entidade) {
+              <span class="badge">{{ log.entidade }} #{{ log.entidadeId }}</span>
+            }
+            <span class="card__data">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
+                <path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/>
+              </svg>
+              {{ formatarData(log.dataAcao) }}
+            </span>
+          </div>
+          @if (log.detalhes) {
+            <div class="card__detalhes">{{ log.detalhes }}</div>
+          }
+        </div>
+      }
+    </div>
+
+    @if (filtrados().length > 0) {
+      <div class="paginacao">
+        <button class="paginacao__btn" [disabled]="paginaCorrente() === 1" (click)="paginaAnterior()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+            <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z"/>
+          </svg>
+          Anterior
+        </button>
+        <div class="paginacao__nums">
+          @for (p of paginas(); track p) {
+            <button class="paginacao__num" [class.paginacao__num--ativo]="p === paginaCorrente()" (click)="irPara(p)">
+              {{ p }}
+            </button>
+          }
+        </div>
+        <button class="paginacao__btn" [disabled]="paginaCorrente() === totalPaginas()" (click)="proximaPagina()">
+          Próxima
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+            <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+          </svg>
+        </button>
+      </div>
+    }
+
+  </main>
+
+  <app-bottom-nav />
+
+</div>

@@ -185,6 +185,20 @@ $bp-desktop: 1024px;
   }
 }
 
+.sucesso-message {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: $primary;
+  font-size: 0.9375rem;
+  background: #f0fdf4;
+  border: 1.5px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 0.875rem 1rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
 .error-message {
   color: #dc2626;
   font-size: 0.875rem;

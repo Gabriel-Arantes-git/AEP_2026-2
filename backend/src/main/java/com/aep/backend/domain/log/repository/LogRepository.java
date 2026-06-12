@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface LogRepository extends DefaultCrudRepository<LogAcao> {
     List<LogAcao> findAllByEntidadeAndEntidadeIdOrderByDataCadastroAsc(String entidade, Long entidadeId);
+    List<LogAcao> findAllByOrderByDataCadastroDesc();
 }

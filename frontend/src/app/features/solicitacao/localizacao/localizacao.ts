@@ -29,6 +29,7 @@ export class LocalizacaoComponent {
   readonly bairro             = signal('');
   readonly cep                = signal('');
   readonly enviando           = signal(false);
+  readonly sucesso            = signal(false);
   readonly erro               = signal('');
 
   private map:      import('leaflet').Map    | null = null;
@@ -110,7 +111,8 @@ export class LocalizacaoComponent {
     obs.subscribe({
       next: () => {
         this.rascunho.limpar();
-        this.router.navigate(['/acompanhamento']);
+        this.sucesso.set(true);
+        setTimeout(() => this.router.navigate(['/acompanhamento']), 2000);
       },
       error: err => {
         this.enviando.set(false);

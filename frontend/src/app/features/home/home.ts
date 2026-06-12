@@ -1,6 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { of } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { AuthResponse } from '../../core/models/auth.model';
 import { SolicitacaoService } from '../../core/services/solicitacao.service';
@@ -31,9 +30,7 @@ export class HomeComponent implements OnInit {
   private carregarEstatisticas(): void {
     const obs = this.authService.isAdmin()
       ? this.solicitacaoService.listar()
-      : this.authService.isAuthenticated()
-        ? this.solicitacaoService.listarMinhas()
-        : of([]);
+      : this.solicitacaoService.listarPublicas();
 
     obs.subscribe({
       next: solicitacoes => {

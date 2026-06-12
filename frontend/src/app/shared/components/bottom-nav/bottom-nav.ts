@@ -17,6 +17,10 @@ export class BottomNavComponent {
     return this.auth.isAuthenticated();
   }
 
+  get isGestor(): boolean {
+    return this.auth.isGestor();
+  }
+
   logout(): void {
     this.auth.logout();
     this.router.navigate(['/login']);

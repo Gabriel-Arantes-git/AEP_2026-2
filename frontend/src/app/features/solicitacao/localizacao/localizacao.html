@@ -46,6 +46,15 @@
         </div>
       }
 
+      @if (sucesso()) {
+        <div class="sucesso-message">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="22" height="22">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+          </svg>
+          Solicitação enviada com sucesso! Redirecionando...
+        </div>
+      }
+
       @if (erro()) {
         <p class="error-message">{{ erro() }}</p>
       }
@@ -53,7 +62,7 @@
       <div class="confirmar-wrapper">
         <button
           class="btn-confirmar"
-          [disabled]="!pontoSelecionado() || carregandoEndereco() || enviando()"
+          [disabled]="!pontoSelecionado() || carregandoEndereco() || enviando() || sucesso()"
           (click)="confirmar()"
         >
           {{ enviando() ? 'Enviando...' : 'Confirmar local' }}

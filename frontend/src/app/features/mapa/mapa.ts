@@ -4,9 +4,11 @@ import { catchError, firstValueFrom, of } from 'rxjs';
 import { SolicitacaoService } from '../../core/services/solicitacao.service';
 import { SolicitacaoView, paraSolicitacaoView } from '../../core/models/solicitacao.model';
 import { AuthService } from '../../core/services/auth.service';
-import { COR_PRIORIDADE, FILTRO_SEM_DADOS, FILTROS_MAPA, PRIORIDADE_LABEL } from '../../core/constants/solicitacao.constants';
+import { COR_PRIORIDADE, FILTRO_SEM_DADOS, FILTROS_MAPA, formatarPrazo, PRIORIDADE_LABEL } from '../../core/constants/solicitacao.constants';
 import { adicionarTileLayer, pinSvg } from '../../core/utils/leaflet.utils';
 import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-nav';
+import { SlaService } from '../../core/services/sla.service';
+import { SlaConfig } from '../../core/models/sla.model';
 
 @Component({
   selector: 'app-mapa',
@@ -18,6 +20,7 @@ import { BottomNavComponent } from '../../shared/components/bottom-nav/bottom-na
 export class MapaComponent {
   private readonly service = inject(SolicitacaoService);
   private readonly auth = inject(AuthService);
+  private readonly slaService = inject(SlaService);
 
   readonly FILTROS         = FILTROS_MAPA;
   readonly FILTRO_SEM_DADOS = FILTRO_SEM_DADOS;
@@ -25,12 +28,14 @@ export class MapaComponent {
   readonly filtroAtivo  = signal<string | null>(null);
   readonly isAdmin      = signal(false);
   readonly filtroAberto = signal(false);
+  readonly slaConfigs   = signal<SlaConfig[]>([]);
 
   private mapaLeaflet: import('leaflet').Map | null = null;
   private marcadores: Array<{ marker: import('leaflet').Marker; prioridade: string | null }> = [];
 
   constructor() {
     this.isAdmin.set(this.auth.isAdmin());
+    this.slaService.listar().subscribe({ next: configs => this.slaConfigs.set(configs) });
     afterNextRender(() => this.iniciarMapa());
   }
 
@@ -39,7 +44,9 @@ export class MapaComponent {
 
     const obs = this.isAdmin()
       ? this.service.listar()
-      : this.service.listarPublicas();
+      : this.auth.isAuthenticated()
+        ? this.service.listarMinhas()
+        : this.service.listarAnonimas();
 
     const solicitacoes = await firstValueFrom(obs.pipe(catchError(() => of([]))));
     const lista = solicitacoes.map(paraSolicitacaoView).filter(s =>
@@ -100,6 +107,11 @@ export class MapaComponent {
 
   prioridadeLabel(p: string | null): string {
     return p ? (PRIORIDADE_LABEL[p] ?? p) : '—';
+  }
+
+  prazoLabel(p: string | null): string {
+    const config = this.slaConfigs().find(c => c.prioridade === p);
+    return config ? formatarPrazo(config.prazoHoras) : '—';
   }
 
   prioridadeCor(p: string | null): string {
